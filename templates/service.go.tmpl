@@ -1,0 +1,72 @@
+package services
+
+import (
+	"errors"
+
+	"gorm.io/gorm"
+	"{{.PackageName}}/models"
+)
+
+type {{.StructName}}Service struct {
+	db *gorm.DB
+}
+
+func New{{.StructName}}Service(db *gorm.DB) *{{.StructName}}Service {
+	return &{{.StructName}}Service{db: db}
+}
+
+func (s *{{.StructName}}Service) Create({{.VarName}} *models.{{.StructName}}) error {
+	return s.db.Create({{.VarName}}).Error
+}
+
+func (s *{{.StructName}}Service) GetByID(id uint) (*models.{{.StructName}}, error) {
+	var {{.VarName}} models.{{.StructName}}
+	if err := s.db.First(&{{.VarName}}, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &{{.VarName}}, nil
+}
+
+func (s *{{.StructName}}Service) Update({{.VarName}} *models.{{.StructName}}) error {
+	return s.db.Save({{.VarName}}).Error
+}
+
+func (s *{{.StructName}}Service) Delete(id uint) error {
+	return s.db.Delete(&models.{{.StructName}}{}, id).Error
+}
+
+func (s *{{.StructName}}Service) List(page, pageSize int) ([]models.{{.StructName}}, error) {
+	var {{.VarName}}s []models.{{.StructName}}
+	offset := (page - 1) * pageSize
+	if err := s.db.Offset(offset).Limit(pageSize).Find(&{{.VarName}}s).Error; err != nil {
+		return nil, err
+	}
+	return {{.VarName}}s, nil
+}
+
+{{range .Indexes}}
+{{if .Unique}}
+func (s *{{$.StructName}}Service) GetBy{{range $i, $e := .Fields}}{{if $i}}And{{end}}{{$e | title}}{{end}}({{range $i, $e := .Fields}}{{if $i}}, {{end}}{{$e | lower}} {{index $.FieldTypes $e}}{{end}}) (*models.{{$.StructName}}, error) {
+	var {{$.VarName}} models.{{$.StructName}}
+	if err := s.db.Where("{{range $i, $e := .Fields}}{{if $i}} AND {{end}}{{$e | snake}} = ?{{end}}", {{range $i, $e := .Fields}}{{if $i}}, {{end}}{{$e | lower}}{{end}}).First(&{{$.VarName}}).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &{{$.VarName}}, nil
+}
+{{else}}
+func (s *{{$.StructName}}Service) ListBy{{range $i, $e := .Fields}}{{if $i}}And{{end}}{{$e | title}}{{end}}({{range $i, $e := .Fields}}{{if $i}}, {{end}}{{$e | lower}} {{index $.FieldTypes $e}}{{end}}, page, pageSize int) ([]models.{{$.StructName}}, error) {
+	var {{$.VarName}}s []models.{{$.StructName}}
+	offset := (page - 1) * pageSize
+	if err := s.db.Where("{{range $i, $e := .Fields}}{{if $i}} AND {{end}}{{$e | snake}} = ?{{end}}", {{range $i, $e := .Fields}}{{if $i}}, {{end}}{{$e | lower}}{{end}}).Offset(offset).Limit(pageSize).Find(&{{$.VarName}}s).Error; err != nil {
+		return nil, err
+	}
+	return {{$.VarName}}s, nil
+}
+{{end}}
+{{end}}
