@@ -10,6 +10,7 @@ import (
 
 	"github.com/Tallone/gorm-crud-gen/parser"
 	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 type Generator struct {
@@ -38,7 +39,7 @@ func (g *Generator) Generate() error {
 
 func (g *Generator) generateService() error {
 	tmpl, err := template.New("service.go.tmpl").Funcs(template.FuncMap{
-		"title": cases.Title,
+		"title": cases.Title(language.English).String,
 		"lower": strings.ToLower,
 		"snake": toSnakeCase,
 	}).ParseFiles("templates/service.go.tmpl")
@@ -54,6 +55,7 @@ func (g *Generator) generateService() error {
 	var buf bytes.Buffer
 	err = tmpl.Execute(&buf, map[string]interface{}{
 		"StructName":  g.ParsedStruct.Name,
+		"ServiceName": g.ParsedStruct.Name + "Service",
 		"VarName":     strings.ToLower(g.ParsedStruct.Name[:1]) + g.ParsedStruct.Name[1:],
 		"PackageName": g.PackageName,
 		"Indexes":     g.ParsedStruct.Indexes,
@@ -74,7 +76,7 @@ func (g *Generator) generateService() error {
 
 func (g *Generator) generateHandler() error {
 	tmpl, err := template.New("handler.go.tmpl").Funcs(template.FuncMap{
-		"title": cases.Title,
+		"title": cases.Title(language.English).String,
 		"lower": strings.ToLower,
 		"snake": toSnakeCase,
 		"kebab": toKebabCase,

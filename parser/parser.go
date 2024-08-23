@@ -44,8 +44,12 @@ func ParseGormStruct(filePath string) (ParsedStruct, error) {
 		case *ast.StructType:
 			for _, field := range x.Fields.List {
 				structField := StructField{
-					Name: field.Names[0].Name,
 					Type: typeToString(field.Type),
+				}
+				if len(field.Names) > 0 {
+					structField.Name = field.Names[0].Name
+				} else {
+					structField.Name = typeToString(field.Type)
 				}
 				if field.Tag != nil {
 					structField.Tag = strings.Trim(field.Tag.Value, "`")
