@@ -1,20 +1,21 @@
-package handlers
+package handler
 
 import (
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"{{.PackageName}}/src/models"
-	"{{.PackageName}}/src/services"
-	"{{.PackageName}}/src/web/response"
+	"{{.PackageName}}/internal/entity"
+	"{{.PackageName}}/internal/service"
+	"{{.PackageName}}/internal/http/response"
+	"{{.PackageName}}/internal/g/errors"
 )
 
 type {{.StructName}}Handler struct {
-	service *services.{{.StructName}}Service
+	service *service.{{.StructName}}Service
 }
 
-func New{{.StructName}}Handler(service *services.{{.StructName}}Service) *{{.StructName}}Handler {
+func New{{.StructName}}Handler(service *service.{{.StructName}}Service) *{{.StructName}}Handler {
 	return &{{.StructName}}Handler{service: service}
 }
 
@@ -24,17 +25,17 @@ func New{{.StructName}}Handler(service *services.{{.StructName}}Service) *{{.Str
 // @Tags {{.StructName}}
 // @Accept json
 // @Produce json
-// @Param {{.VarName}} body models.{{.StructName}} true "Create {{.StructName}}"
-// @Success 200 {object}  response.Response{data=models.{{.StructName}}}
+// @Param {{.VarName}} body entity.{{.StructName}} true "Create {{.StructName}}"
+// @Success 200 {object}  response.Response{data=entity.{{.StructName}}}
 // @Router /v1/{{.VarName}}s [post]
 func (h *{{.StructName}}Handler) Create{{.StructName}}(c *gin.Context) {
-	var {{.VarName}} models.{{.StructName}}
+	var {{.VarName}} entity.{{.StructName}}
 	if err := c.ShouldBindJSON(&{{.VarName}}); err != nil {
 		response.Fail(c, errors.ErrorInvalidRequest)
 		return
 	}
 
-	if err := h.service.Create(&{{.VarName}}); err != nil {
+	if err := h.service.Create(c, &{{.VarName}}); err != nil {
 		response.Fail(c, err)
 		return
 	}
@@ -49,7 +50,7 @@ func (h *{{.StructName}}Handler) Create{{.StructName}}(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path int true "{{.StructName}} ID"
-// @Success 200 {object} response.Response{data=models.{{.StructName}}}
+// @Success 200 {object} response.Response{data=entity.{{.StructName}}}
 // @Router /v1/{{.VarName}}s/{id} [get]
 func (h *{{.StructName}}Handler) Get{{.StructName}}(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
@@ -58,7 +59,7 @@ func (h *{{.StructName}}Handler) Get{{.StructName}}(c *gin.Context) {
 		return
 	}
 
-	{{.VarName}}, err := h.service.GetByID(uint(id))
+	{{.VarName}}, err := h.service.GetByID(c, uint(id))
 	if err != nil {
 		response.Fail(c, err)
 		return
@@ -74,8 +75,8 @@ func (h *{{.StructName}}Handler) Get{{.StructName}}(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path int true "{{.StructName}} ID"
-// @Param {{.VarName}} body models.{{.StructName}} true "Update {{.StructName}}"
-// @Success 200 {object} response.Response{data=models.{{.StructName}}}
+// @Param {{.VarName}} body entity.{{.StructName}} true "Update {{.StructName}}"
+// @Success 200 {object} response.Response{data=entity.{{.StructName}}}
 // @Router /v1/{{.VarName}}s/{id} [put]
 func (h *{{.StructName}}Handler) Update{{.StructName}}(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
@@ -84,14 +85,14 @@ func (h *{{.StructName}}Handler) Update{{.StructName}}(c *gin.Context) {
 		return
 	}
 
-	var {{.VarName}} models.{{.StructName}}
+	var {{.VarName}} entity.{{.StructName}}
 	if err := c.ShouldBindJSON(&{{.VarName}}); err != nil {
 		response.Fail(c, errors.ErrorInvalidRequest)
 		return
 	}
 
 	{{.VarName}}.ID = uint(id)
-	if err := h.service.Update(&{{.VarName}}); err != nil {
+	if err := h.service.Update(c, &{{.VarName}}); err != nil {
 		response.Fail(c, err)
 		return
 	}
@@ -115,7 +116,7 @@ func (h *{{.StructName}}Handler) Delete{{.StructName}}(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.Delete(uint(id)); err != nil {
+	if err := h.service.Delete(c, uint(id)); err != nil {
 		response.Fail(c, err)
 		return
 	}
@@ -131,13 +132,13 @@ func (h *{{.StructName}}Handler) Delete{{.StructName}}(c *gin.Context) {
 // @Produce json
 // @Param page query int false "Page number"
 // @Param page_size query int false "Page size"
-// @Success 200 {object} response.Response{data=[]models.{{.StructName}}}
+// @Success 200 {object} response.Response{data=[]entity.{{.StructName}}}
 // @Router /v1/{{.VarName}}s [get]
 func (h *{{.StructName}}Handler) List{{.StructName}}s(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
 
-	{{.VarName}}s, err := h.service.List(page, pageSize)
+	{{.VarName}}s, err := h.service.List(c, page, pageSize)
 	if err != nil {
 		response.Fail(c, err)
 		return
@@ -157,14 +158,14 @@ func (h *{{.StructName}}Handler) List{{.StructName}}s(c *gin.Context) {
 {{range .Fields}}
 // @Param {{.}} query {{index $.FieldTypes .}} true "{{$.StructName}} {{.}}"
 {{end}}
-// @Success 200 {object} models.{{$.StructName}}
+// @Success 200 {object} entity.{{$.StructName}}
 // @Router /v1/{{$.VarName}}s/by-{{range $i, $e := .Fields}}{{if $i}}-and{{end}}{{$e | kebab}}{{end}} [get]
 func (h *{{$.StructName}}Handler) Get{{$.StructName}}By{{range $i, $e := .Fields}}{{if $i}}And{{end}}{{$e | title}}{{end}}(c *gin.Context) {
 	{{range .Fields}}
 	{{.}} := c.Query("{{.}}")
 	{{end}}
 
-	{{$.VarName}}, err := h.service.GetBy{{range $i, $e := .Fields}}{{if $i}}And{{end}}{{$e | title}}{{end}}({{range $i, $e := .Fields}}{{if $i}}, {{end}}{{$e}}{{end}})
+	{{$.VarName}}, err := h.service.GetBy{{range $i, $e := .Fields}}{{if $i}}And{{end}}{{$e | title}}{{end}}(c, {{range $i, $e := .Fields}}{{if $i}}, {{end}}{{$e}}{{end}})
 	if err != nil {
 		response.Fail(c, err)
 		return

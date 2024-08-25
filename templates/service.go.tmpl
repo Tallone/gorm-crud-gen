@@ -1,11 +1,11 @@
-package services
+package service
 
 import (
 	"context"
 
 	"gorm.io/gorm"
-	"{{.PackageName}}/src/models"
-	"{{.PackageName}}/src/g/errors"
+	"{{.PackageName}}/internal/entity"
+	"{{.PackageName}}/internal/g/errors"
 )
 
 type {{.ServiceName}} struct {
@@ -16,28 +16,28 @@ func New{{.ServiceName}}(db *gorm.DB) *{{.ServiceName}} {
 	return &{{.ServiceName}}{db: db}
 }
 
-func (s *{{.ServiceName}}) Create(ctx context.Context, {{.VarName}} *models.{{.StructName}}) error {
+func (s *{{.ServiceName}}) Create(ctx context.Context, {{.VarName}} *entity.{{.StructName}}) error {
 	return s.db.Create({{.VarName}}).Error
 }
 
-func (s *{{.ServiceName}}) GetByID(ctx context.Context, id uint) (*models.{{.StructName}}, error) {
-	var {{.VarName}} models.{{.StructName}}
+func (s *{{.ServiceName}}) GetByID(ctx context.Context, id uint) (*entity.{{.StructName}}, error) {
+	var {{.VarName}} entity.{{.StructName}}
 	if err := s.db.First(&{{.VarName}}, id).Error; err != nil {
 		return nil, errors.NewDbError(err)
 	}
 	return &{{.VarName}}, nil
 }
 
-func (s *{{.ServiceName}}) Update(ctx context.Context, {{.VarName}} *models.{{.StructName}}) error {
+func (s *{{.ServiceName}}) Update(ctx context.Context, {{.VarName}} *entity.{{.StructName}}) error {
 	return s.db.Save({{.VarName}}).Error
 }
 
 func (s *{{.ServiceName}}) Delete(ctx context.Context, id uint) error {
-	return s.db.Delete(&models.{{.StructName}}{}, id).Error
+	return s.db.Delete(&entity.{{.StructName}}{}, id).Error
 }
 
-func (s *{{.ServiceName}}) List(ctx context.Context, page, pageSize int) ([]models.{{.StructName}}, error) {
-	var {{.VarName}}s []models.{{.StructName}}
+func (s *{{.ServiceName}}) List(ctx context.Context, page, pageSize int) ([]entity.{{.StructName}}, error) {
+	var {{.VarName}}s []entity.{{.StructName}}
 	offset := (page - 1) * pageSize
 	if err := s.db.Offset(offset).Limit(pageSize).Find(&{{.VarName}}s).Error; err != nil {
 		return nil, errors.NewDbError(err)
@@ -46,16 +46,16 @@ func (s *{{.ServiceName}}) List(ctx context.Context, page, pageSize int) ([]mode
 }
 
 {{range .Indexes}}
-func (s *{{$.StructName}}Service) GetBy{{range $i, $e := .Fields}}{{if $i}}And{{end}}{{$e | title}}{{end}}(ctx context.Context, {{range $i, $e := .Fields}}{{if $i}}, {{end}}{{$e | lower}} {{index $.FieldTypes $e}}{{end}}) (*models.{{$.StructName}}, error) {
-	var {{$.VarName}} models.{{$.StructName}}
+func (s *{{$.StructName}}Service) GetBy{{range $i, $e := .Fields}}{{if $i}}And{{end}}{{$e | title}}{{end}}(ctx context.Context, {{range $i, $e := .Fields}}{{if $i}}, {{end}}{{$e | lower}} {{index $.FieldTypes $e}}{{end}}) (*entity.{{$.StructName}}, error) {
+	var {{$.VarName}} entity.{{$.StructName}}
 	if err := s.db.Where("{{range $i, $e := .Fields}}{{if $i}} AND {{end}}{{$e | snake}} = ?{{end}}", {{range $i, $e := .Fields}}{{if $i}}, {{end}}{{$e | lower}}{{end}}).First(&{{$.VarName}}).Error; err != nil {
 		return nil, errors.NewDbError(err)
 	}
 	return &{{$.VarName}}, nil
 }
 {{if not .Unique}}
-func (s *{{$.StructName}}Service) ListBy{{range $i, $e := .Fields}}{{if $i}}And{{end}}{{$e | title}}{{end}}(ctx context.Context, {{range $i, $e := .Fields}}{{if $i}}, {{end}}{{$e | lower}} {{index $.FieldTypes $e}}{{end}}, page, pageSize int) ([]models.{{$.StructName}}, error) {
-	var {{$.VarName}}s []models.{{$.StructName}}
+func (s *{{$.StructName}}Service) ListBy{{range $i, $e := .Fields}}{{if $i}}And{{end}}{{$e | title}}{{end}}(ctx context.Context, {{range $i, $e := .Fields}}{{if $i}}, {{end}}{{$e | lower}} {{index $.FieldTypes $e}}{{end}}, page, pageSize int) ([]entity.{{$.StructName}}, error) {
+	var {{$.VarName}}s []entity.{{$.StructName}}
 	offset := (page - 1) * pageSize
 	if err := s.db.Where("{{range $i, $e := .Fields}}{{if $i}} AND {{end}}{{$e | snake}} = ?{{end}}", {{range $i, $e := .Fields}}{{if $i}}, {{end}}{{$e | lower}}{{end}}).Offset(offset).Limit(pageSize).Find(&{{$.VarName}}s).Error; err != nil {
 		return nil, errors.NewDbError(err)

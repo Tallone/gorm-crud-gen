@@ -2,6 +2,7 @@ package generator
 
 import (
 	"bytes"
+	"fmt"
 	"go/format"
 	"os"
 	"path/filepath"
@@ -9,6 +10,7 @@ import (
 	"text/template"
 
 	"github.com/Tallone/gorm-crud-gen/parser"
+	"github.com/Tallone/gorm-crud-gen/templates"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -28,6 +30,17 @@ func NewGenerator(parsedStruct parser.ParsedStruct, packageName, outputDir strin
 }
 
 func (g *Generator) Generate() error {
+	// Ensure output directories exist
+	dirs := []string{
+		filepath.Join(g.OutputDir, "service"),
+		filepath.Join(g.OutputDir, "handler"),
+	}
+	for _, dir := range dirs {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return fmt.Errorf("failed to create directory %s: %w", dir, err)
+		}
+	}
+
 	if err := g.generateService(); err != nil {
 		return err
 	}
@@ -42,7 +55,7 @@ func (g *Generator) generateService() error {
 		"title": cases.Title(language.English).String,
 		"lower": strings.ToLower,
 		"snake": toSnakeCase,
-	}).ParseFiles("templates/service.go.tmpl")
+	}).ParseFS(templates.ServiceFile, "service.go.tmpl")
 	if err != nil {
 		return err
 	}
@@ -70,8 +83,20 @@ func (g *Generator) generateService() error {
 		return err
 	}
 
-	outputPath := filepath.Join(g.OutputDir, "services", strings.ToLower(g.ParsedStruct.Name)+"_service.go")
-	return os.WriteFile(outputPath, formattedCode, 0644)
+	outputPath := filepath.Join(g.OutputDir, "service", strings.ToLower(g.ParsedStruct.Name)+"_service.go")
+	absolutePath, err := filepath.Abs(outputPath)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path: %w", err)
+	}
+
+	// Check if file exists
+	if _, err := os.Stat(absolutePath); os.IsNotExist(err) {
+		// File doesn't exist, create it
+		return os.WriteFile(absolutePath, formattedCode, 0644)
+	}
+	fmt.Println("Skip:", absolutePath)
+
+	return nil
 }
 
 func (g *Generator) generateHandler() error {
@@ -80,7 +105,7 @@ func (g *Generator) generateHandler() error {
 		"lower": strings.ToLower,
 		"snake": toSnakeCase,
 		"kebab": toKebabCase,
-	}).ParseFiles("templates/handler.go.tmpl")
+	}).ParseFS(templates.HandlerFile, "handler.go.tmpl")
 	if err != nil {
 		return err
 	}
@@ -107,8 +132,19 @@ func (g *Generator) generateHandler() error {
 		return err
 	}
 
-	outputPath := filepath.Join(g.OutputDir, "handlers", strings.ToLower(g.ParsedStruct.Name)+"_handler.go")
-	return os.WriteFile(outputPath, formattedCode, 0644)
+	outputPath := filepath.Join(g.OutputDir, "handler", strings.ToLower(g.ParsedStruct.Name)+"_handler.go")
+	absolutePath, err := filepath.Abs(outputPath)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path: %w", err)
+	}
+
+	// Check if file exists
+	if _, err := os.Stat(absolutePath); os.IsNotExist(err) {
+		// File doesn't exist, create it
+		return os.WriteFile(absolutePath, formattedCode, 0644)
+	}
+	fmt.Println("Skip:", absolutePath)
+	return err
 }
 
 func toSnakeCase(s string) string {
