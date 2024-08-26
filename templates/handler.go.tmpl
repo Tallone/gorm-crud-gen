@@ -21,34 +21,48 @@ func New{{.StructName}}Handler(service *service.{{.StructName}}Service) *{{.Stru
 	return &{{.StructName}}Handler{service: service}
 }
 
-// Create{{.StructName}} godoc
-// @Summary Create a new {{.StructName}}
-// @Description Create a new {{.StructName}} with the input payload
+// Optional{{.StructName}} is a struct that every field is a pointer
+type Optional{{.StructName}} struct {
+{{ range .StructFields}}
+	{{.Name}} *{{.Type}}
+{{ end}}
+}
+
+// Save{{.StructName}} godoc
+// @Summary Save {{.StructName}}
+// @Description Create a new {{.StructName}} if ID is null, otherwise update the {{.StructName}}
 // @Tags {{.StructName}}
 // @Accept json
 // @Produce json
-// @Param {{.VarName}} body entity.{{.StructName}} true "Create {{.StructName}}"
+// @Param {{.VarName}} body entity.{{.StructName}} true "Save {{.StructName}}"
 // @Success 200 {object}  response.Response{data=entity.{{.StructName}}}
 // @Router /v1/{{.VarName}}	[post]
-func (h *{{.StructName}}Handler) Create{{.StructName}}(c *gin.Context) {
+func (h *{{.StructName}}Handler) Save{{.StructName}}(c *gin.Context) {
 	uid, exists := c.Get(cons.Uid)
 	if !exists {
 		response.Fail(c, errors.ErrorAuthFailed)
 		return
 	}
 
-	var {{.VarName}} entity.{{.StructName}}
+	var {{.VarName}} Optional{{.StructName}}
 	if err := c.ShouldBindJSON(&{{.VarName}}); err != nil {
 		response.Fail(c, errors.ErrorInvalidRequest)
 		return
 	}
 
-	if err := h.service.Create(c, &{{.VarName}}); err != nil {
+	var entity entity.{{.StructName}}
+	err := mapstructure.Decode({{.VarName}}, &entity)
+	if err != nil {
+		response.Fail(c, errors.ErrorInvalidRequest)
+		return
+	}
+
+	if err := h.service.Update(c, &entity); err != nil {
 		response.Fail(c, err)
 		return
 	}
 
-	c.JSON(http.StatusCreated, {{.VarName}})
+	response.Ok(c, entity)
 }
 
 // Get{{.StructName}} godoc
@@ -79,45 +93,7 @@ func (h *{{.StructName}}Handler) Get{{.StructName}}(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, {{.VarName}})
-}
-
-// Update{{.StructName}} godoc
-// @Summary Update a {{.StructName}}
-// @Description Update a {{.StructName}} with the input payload
-// @Tags {{.StructName}}
-// @Accept json
-// @Produce json
-// @Param id path int true "{{.StructName}} ID"
-// @Param {{.VarName}} body entity.{{.StructName}} true "Update {{.StructName}}"
-// @Success 200 {object} response.Response{data=entity.{{.StructName}}}
-// @Router /v1/{{.VarName}}/{id} [put]
-func (h *{{.StructName}}Handler) Update{{.StructName}}(c *gin.Context) {
-	uid, exists := c.Get(cons.Uid)
-	if !exists {
-		response.Fail(c, errors.ErrorAuthFailed)
-		return
-	}
-
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		response.Fail(c, errors.ErrorInvalidRequest)
-		return
-	}
-
-	var {{.VarName}} entity.{{.StructName}}
-	if err := c.ShouldBindJSON(&{{.VarName}}); err != nil {
-		response.Fail(c, errors.ErrorInvalidRequest)
-		return
-	}
-
-	{{.VarName}}.ID = uint(id)
-	if err := h.service.Update(c, &{{.VarName}}); err != nil {
-		response.Fail(c, err)
-		return
-	}
-
-	c.JSON(http.StatusOK, {{.VarName}})
+	response.Ok(c, {{.VarName}})
 }
 
 // Delete{{.StructName}} godoc
@@ -148,7 +124,7 @@ func (h *{{.StructName}}Handler) Delete{{.StructName}}(c *gin.Context) {
 		return
 	}
 
-	c.Status(http.StatusNoContent)
+	response.JustOk(c)
 }
 
 // List{{.StructName}}s godoc
@@ -181,7 +157,7 @@ func (h *{{.StructName}}Handler) List{{.StructName}}s(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, {{.VarName}}s)
+	response.Ok(c, {{.VarName}}s)
 }
 
 {{range .Indexes}}
@@ -208,7 +184,7 @@ func (h *{{$.StructName}}Handler) Get{{$.StructName}}By{{range $i, $e := .Fields
 		return
 	}
 
-	c.JSON(http.StatusOK, {{$.VarName}})
+	response.Ok(c, {{$.VarName}})
 }
 {{end}}
 {{end}}
