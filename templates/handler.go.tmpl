@@ -5,9 +5,11 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"{{.PackageName}}/internal/cons"
 	"{{.PackageName}}/internal/entity"
 	"{{.PackageName}}/internal/service"
 	"{{.PackageName}}/internal/http/response"
+	"{{.PackageName}}/internal/model"
 	"{{.PackageName}}/internal/g/errors"
 )
 
@@ -27,8 +29,14 @@ func New{{.StructName}}Handler(service *service.{{.StructName}}Service) *{{.Stru
 // @Produce json
 // @Param {{.VarName}} body entity.{{.StructName}} true "Create {{.StructName}}"
 // @Success 200 {object}  response.Response{data=entity.{{.StructName}}}
-// @Router /v1/{{.VarName}}s [post]
+// @Router /v1/{{.VarName}}	[post]
 func (h *{{.StructName}}Handler) Create{{.StructName}}(c *gin.Context) {
+	uid, exists := c.Get(cons.Uid)
+	if !exists {
+		response.Fail(c, errors.ErrorAuthFailed)
+		return
+	}
+
 	var {{.VarName}} entity.{{.StructName}}
 	if err := c.ShouldBindJSON(&{{.VarName}}); err != nil {
 		response.Fail(c, errors.ErrorInvalidRequest)
@@ -51,8 +59,14 @@ func (h *{{.StructName}}Handler) Create{{.StructName}}(c *gin.Context) {
 // @Produce json
 // @Param id path int true "{{.StructName}} ID"
 // @Success 200 {object} response.Response{data=entity.{{.StructName}}}
-// @Router /v1/{{.VarName}}s/{id} [get]
+// @Router /v1/{{.VarName}}/{id} [get]
 func (h *{{.StructName}}Handler) Get{{.StructName}}(c *gin.Context) {
+	uid, exists := c.Get(cons.Uid)
+	if !exists {
+		response.Fail(c, errors.ErrorAuthFailed)
+		return
+	}
+
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		response.Fail(c, errors.ErrorInvalidRequest)
@@ -77,8 +91,14 @@ func (h *{{.StructName}}Handler) Get{{.StructName}}(c *gin.Context) {
 // @Param id path int true "{{.StructName}} ID"
 // @Param {{.VarName}} body entity.{{.StructName}} true "Update {{.StructName}}"
 // @Success 200 {object} response.Response{data=entity.{{.StructName}}}
-// @Router /v1/{{.VarName}}s/{id} [put]
+// @Router /v1/{{.VarName}}/{id} [put]
 func (h *{{.StructName}}Handler) Update{{.StructName}}(c *gin.Context) {
+	uid, exists := c.Get(cons.Uid)
+	if !exists {
+		response.Fail(c, errors.ErrorAuthFailed)
+		return
+	}
+
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		response.Fail(c, errors.ErrorInvalidRequest)
@@ -103,13 +123,20 @@ func (h *{{.StructName}}Handler) Update{{.StructName}}(c *gin.Context) {
 // Delete{{.StructName}} godoc
 // @Summary Delete a {{.StructName}}
 // @Description Delete a {{.StructName}} by ID
+// @Security Token
 // @Tags {{.StructName}}
 // @Accept json
 // @Produce json
 // @Param id path int true "{{.StructName}} ID"
 // @Success 200 {object} response.Response
-// @Router /v1/{{.VarName}}s/{id} [delete]
+// @Router /v1/{{.VarName}}/{id} [delete]
 func (h *{{.StructName}}Handler) Delete{{.StructName}}(c *gin.Context) {
+	uid, exists := c.Get(cons.Uid)
+	if !exists {
+		response.Fail(c, errors.ErrorAuthFailed)
+		return
+	}
+
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		response.Fail(c, errors.ErrorInvalidRequest)
@@ -127,18 +154,28 @@ func (h *{{.StructName}}Handler) Delete{{.StructName}}(c *gin.Context) {
 // List{{.StructName}}s godoc
 // @Summary List {{.StructName}}s
 // @Description Get a list of {{.StructName}}s
+// @Security Token
 // @Tags {{.StructName}}
 // @Accept json
 // @Produce json
 // @Param page query int false "Page number"
-// @Param page_size query int false "Page size"
+// @Param pageSize query int false "Page size"
 // @Success 200 {object} response.Response{data=[]entity.{{.StructName}}}
-// @Router /v1/{{.VarName}}s [get]
+// @Router /v1/{{.VarName}}	[get]
 func (h *{{.StructName}}Handler) List{{.StructName}}s(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
+	uid, exists := c.Get(cons.Uid)
+	if !exists {
+		response.Fail(c, errors.ErrorAuthFailed)
+		return
+	}
 
-	{{.VarName}}s, err := h.service.List(c, page, pageSize)
+	var page model.Pagination
+	if err := c.ShouldBindQuery(&page); err != nil {
+		response.Fail(c, errors.ErrorInvalidRequest)
+		return
+	}
+
+	{{.VarName}}s, err := h.service.List(c, page.Page, page.PageSize)
 	if err != nil {
 		response.Fail(c, err)
 		return
@@ -159,7 +196,7 @@ func (h *{{.StructName}}Handler) List{{.StructName}}s(c *gin.Context) {
 // @Param {{.}} query {{index $.FieldTypes .}} true "{{$.StructName}} {{.}}"
 {{end}}
 // @Success 200 {object} entity.{{$.StructName}}
-// @Router /v1/{{$.VarName}}s/by-{{range $i, $e := .Fields}}{{if $i}}-and{{end}}{{$e | kebab}}{{end}} [get]
+// @Router /v1/{{$.VarName}}/by-{{range $i, $e := .Fields}}{{if $i}}-and{{end}}{{$e | kebab}}{{end}} [get]
 func (h *{{$.StructName}}Handler) Get{{$.StructName}}By{{range $i, $e := .Fields}}{{if $i}}And{{end}}{{$e | title}}{{end}}(c *gin.Context) {
 	{{range .Fields}}
 	{{.}} := c.Query("{{.}}")
