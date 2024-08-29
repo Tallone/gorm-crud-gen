@@ -3,10 +3,22 @@ package service
 import (
 	"context"
 
+	"github.com/go-viper/mapstructure/v2"
+	"golang.org/x/exp/maps"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"{{.PackageName}}/internal/entity"
+	"{{.PackageName}}/internal/model"
 	"{{.PackageName}}/internal/g/errors"
 )
+
+// TODO: Move it to model package
+// Optional{{.StructName}} is a struct that every field is a pointer
+type Optional{{.StructName}} struct {
+{{ range .StructFields}}
+	{{.Name}} *{{.Type}}
+{{ end}}
+}
 
 type {{.ServiceName}} struct {
 	db *gorm.DB
@@ -14,6 +26,33 @@ type {{.ServiceName}} struct {
 
 func New{{.ServiceName}}(db *gorm.DB) *{{.ServiceName}} {
 	return &{{.ServiceName}}{db: db}
+}
+
+
+func (s *{{.ServiceName}}) SaveWithDB(ctx context.Context, db *gorm.DB, {{.VarName}} *model.Optional{{.StructName}}) (*entity.{{.StructName}}, error) {
+	return s.SaveWithDB(ctx, s.db, {{.VarName}}
+}
+
+func (s *{{.ServiceName}}) SaveWithDB(ctx context.Context, db *gorm.DB, {{.VarName}} *model.Optional{{.StructName}}) (*entity.{{.StructName}}, error) {
+	var m map[string]interface{}
+	if err := mapstructure.Decode({{.VarName}}, &m); err != nil {
+		return nil, err
+	}
+
+	var e entity.{{.StructName}}
+	if err := mapstructure.Decode(m, &e); err != nil {
+		return nil, err
+	}
+
+	if {{.VarName}}.ID != nil {
+		e.ID = *{{.VarName}}.ID
+		delete(m, "ID")
+		err := db.Model(&e).Clauses(clause.Returning{}).Select(maps.Keys(m)).Updates(e).Error
+		return &e, err
+	}
+
+	err := db.Select(maps.Keys(m)).Create(&e).Error
+	return &e, err
 }
 
 func (s *{{.ServiceName}}) Create(ctx context.Context, {{.VarName}} *entity.{{.StructName}}) error {

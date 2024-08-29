@@ -21,12 +21,7 @@ func New{{.StructName}}Handler(service *service.{{.StructName}}Service) *{{.Stru
 	return &{{.StructName}}Handler{service: service}
 }
 
-// Optional{{.StructName}} is a struct that every field is a pointer
-type Optional{{.StructName}} struct {
-{{ range .StructFields}}
-	{{.Name}} *{{.Type}}
-{{ end}}
-}
+
 
 // Save{{.StructName}} godoc
 // @Summary Save {{.StructName}}
@@ -34,7 +29,7 @@ type Optional{{.StructName}} struct {
 // @Tags {{.StructName}}
 // @Accept json
 // @Produce json
-// @Param {{.VarName}} body entity.{{.StructName}} true "Save {{.StructName}}"
+// @Param {{.VarName}} body model.Optional{{.StructName}} true "Save {{.StructName}}"
 // @Success 200 {object}  response.Response{data=entity.{{.StructName}}}
 // @Router /v1/{{.VarName}}	[post]
 func (h *{{.StructName}}Handler) Save{{.StructName}}(c *gin.Context) {

@@ -67,12 +67,13 @@ func (g *Generator) generateService() error {
 
 	var buf bytes.Buffer
 	err = tmpl.Execute(&buf, map[string]interface{}{
-		"StructName":  g.ParsedStruct.Name,
-		"ServiceName": g.ParsedStruct.Name + "Service",
-		"VarName":     strings.ToLower(g.ParsedStruct.Name[:1]) + g.ParsedStruct.Name[1:],
-		"PackageName": g.PackageName,
-		"Indexes":     g.ParsedStruct.Indexes,
-		"FieldTypes":  fieldTypes,
+		"StructName":   g.ParsedStruct.Name,
+		"ServiceName":  g.ParsedStruct.Name + "Service",
+		"VarName":      strings.ToLower(g.ParsedStruct.Name[:1]) + g.ParsedStruct.Name[1:],
+		"PackageName":  g.PackageName,
+		"Indexes":      g.ParsedStruct.Indexes,
+		"FieldTypes":   fieldTypes,
+		"StructFields": g.ParsedStruct.Fields,
 	})
 	if err != nil {
 		return err
