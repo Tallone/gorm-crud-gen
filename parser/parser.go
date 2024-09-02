@@ -4,6 +4,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"regexp"
 	"strings"
 )
 
@@ -102,10 +103,13 @@ func parseIndexes(fieldName, tag string) []Index {
 	return indexes
 }
 
+var re = regexp.MustCompile(`(?m)gorm:"(.*?)"`)
+
 func extractGormTag(tag string) string {
-	for _, t := range strings.Split(tag, " ") {
-		if strings.HasPrefix(t, "gorm:") {
-			return strings.Trim(strings.TrimPrefix(t, "gorm:"), "\"")
+	matches := re.FindAllStringSubmatch(tag, 1)
+	for _, match := range matches {
+		if len(match) > 1 {
+			return strings.Trim(match[1], "\"")
 		}
 	}
 	return ""

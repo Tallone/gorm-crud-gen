@@ -29,8 +29,8 @@ func New{{.ServiceName}}(db *gorm.DB) *{{.ServiceName}} {
 }
 
 
-func (s *{{.ServiceName}}) SaveWithDB(ctx context.Context, db *gorm.DB, {{.VarName}} *model.Optional{{.StructName}}) (*entity.{{.StructName}}, error) {
-	return s.SaveWithDB(ctx, s.db, {{.VarName}}
+func (s *{{.ServiceName}}) Save(ctx context.Context, db *gorm.DB, {{.VarName}} *model.Optional{{.StructName}}) (*entity.{{.StructName}}, error) {
+	return s.SaveWithDB(ctx, s.db, {{.VarName}})
 }
 
 func (s *{{.ServiceName}}) SaveWithDB(ctx context.Context, db *gorm.DB, {{.VarName}} *model.Optional{{.StructName}}) (*entity.{{.StructName}}, error) {
@@ -51,7 +51,7 @@ func (s *{{.ServiceName}}) SaveWithDB(ctx context.Context, db *gorm.DB, {{.VarNa
 		return &e, err
 	}
 
-	err := db.Select(maps.Keys(m)).Create(&e).Error
+	err := db.Create(&e).Error
 	return &e, err
 }
 

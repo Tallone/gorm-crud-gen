@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/Tallone/gorm-crud-gen/generator"
@@ -12,6 +13,7 @@ import (
 var (
 	outputDir   string
 	packageName string
+	handler     bool
 )
 
 var rootCmd = &cobra.Command{
@@ -31,6 +33,7 @@ func init() {
 	rootCmd.AddCommand(generateCmd)
 	generateCmd.Flags().StringVarP(&outputDir, "output", "o", ".", "Output directory for generated files")
 	generateCmd.Flags().StringVarP(&packageName, "package", "p", "main", "Package name for generated files")
+	generateCmd.Flags().BoolVar(&handler, "handler", true, "Generate handler")
 }
 
 var generateCmd = &cobra.Command{
@@ -43,18 +46,14 @@ var generateCmd = &cobra.Command{
 		// Parse the input file
 		parsedStruct, err := parser.ParseGormStruct(inputFile)
 		if err != nil {
-			fmt.Printf("Error parsing input file: %v\n", err)
-			os.Exit(1)
+			log.Panic(err)
 		}
 
 		// Create the generator
-		gen := generator.NewGenerator(parsedStruct, packageName, outputDir)
+		gen := generator.NewGenerator(parsedStruct, packageName, outputDir, handler)
 
 		// Generate the files
-		if err := gen.Generate(); err != nil {
-			fmt.Printf("Error generating files: %v\n", err)
-			os.Exit(1)
-		}
+		gen.Generate()
 
 		fmt.Printf("Successfully generated CRUD code for %s in %s\n", parsedStruct.Name, outputDir)
 	},

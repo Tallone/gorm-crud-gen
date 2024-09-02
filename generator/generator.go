@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"go/format"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -19,17 +20,19 @@ type Generator struct {
 	ParsedStruct parser.ParsedStruct
 	PackageName  string
 	OutputDir    string
+	Handler      bool
 }
 
-func NewGenerator(parsedStruct parser.ParsedStruct, packageName, outputDir string) *Generator {
+func NewGenerator(parsedStruct parser.ParsedStruct, packageName, outputDir string, handler bool) *Generator {
 	return &Generator{
 		ParsedStruct: parsedStruct,
 		PackageName:  packageName,
 		OutputDir:    outputDir,
+		Handler:      handler,
 	}
 }
 
-func (g *Generator) Generate() error {
+func (g *Generator) Generate() {
 	// Ensure output directories exist
 	dirs := []string{
 		filepath.Join(g.OutputDir, "service"),
@@ -37,27 +40,28 @@ func (g *Generator) Generate() error {
 	}
 	for _, dir := range dirs {
 		if err := os.MkdirAll(dir, 0755); err != nil {
-			return fmt.Errorf("failed to create directory %s: %w", dir, err)
+			log.Panicf("failed to create directory %s: %v", dir, err)
 		}
 	}
 
 	if err := g.generateService(); err != nil {
-		return err
+		log.Panic(err)
 	}
-	if err := g.generateHandler(); err != nil {
-		return err
+	if g.Handler {
+		if err := g.generateHandler(); err != nil {
+			log.Panic(err)
+		}
 	}
-	return nil
 }
 
 func (g *Generator) generateService() error {
 	tmpl, err := template.New("service.go.tmpl").Funcs(template.FuncMap{
-		"title": cases.Title(language.English).String,
-		"lower": strings.ToLower,
+		"title": cases.Title(language.English, cases.NoLower).String,
+		"lower": cases.Lower(language.English, cases.NoLower).String,
 		"snake": toSnakeCase,
 	}).ParseFS(templates.ServiceFile, "service.go.tmpl")
 	if err != nil {
-		return err
+		log.Panic(err)
 	}
 
 	fieldTypes := make(map[string]string)
@@ -76,18 +80,18 @@ func (g *Generator) generateService() error {
 		"StructFields": g.ParsedStruct.Fields,
 	})
 	if err != nil {
-		return err
+		log.Panic(err)
 	}
 
 	formattedCode, err := format.Source(buf.Bytes())
 	if err != nil {
-		return err
+		log.Panic(err)
 	}
 
 	outputPath := filepath.Join(g.OutputDir, "service", strings.ToLower(g.ParsedStruct.Name)+"_service.go")
 	absolutePath, err := filepath.Abs(outputPath)
 	if err != nil {
-		return fmt.Errorf("failed to get absolute path: %w", err)
+		log.Panic(err)
 	}
 
 	// Check if file exists
@@ -95,15 +99,15 @@ func (g *Generator) generateService() error {
 		// File doesn't exist, create it
 		return os.WriteFile(absolutePath, formattedCode, 0644)
 	}
-	fmt.Println("Skip:", absolutePath)
+	log.Println("Skip:", absolutePath)
 
 	return nil
 }
 
 func (g *Generator) generateHandler() error {
 	tmpl, err := template.New("handler.go.tmpl").Funcs(template.FuncMap{
-		"title": cases.Title(language.English).String,
-		"lower": strings.ToLower,
+		"title": cases.Title(language.English, cases.NoLower).String,
+		"lower": cases.Lower(language.English, cases.NoLower).String,
 		"snake": toSnakeCase,
 		"kebab": toKebabCase,
 	}).ParseFS(templates.HandlerFile, "handler.go.tmpl")
