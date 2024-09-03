@@ -33,31 +33,20 @@ func New{{.StructName}}Handler(service *service.{{.StructName}}Service) *{{.Stru
 // @Success 200 {object}  response.Response{data=entity.{{.StructName}}}
 // @Router /v1/{{.VarName}}	[post]
 func (h *{{.StructName}}Handler) Save{{.StructName}}(c *gin.Context) {
-	uid, exists := c.Get(cons.Uid)
-	if !exists {
-		response.Fail(c, errors.ErrorAuthFailed)
-		return
-	}
+	uid := c.GetUint(cons.Uid)
 
-	var {{.VarName}} Optional{{.StructName}}
+	var {{.VarName}} model.Optional{{.StructName}}
 	if err := c.ShouldBindJSON(&{{.VarName}}); err != nil {
 		response.Fail(c, errors.ErrorInvalidRequest)
 		return
 	}
 
-	var entity entity.{{.StructName}}
-	err := mapstructure.Decode({{.VarName}}, &entity)
-	if err != nil {
-		response.Fail(c, errors.ErrorInvalidRequest)
-		return
-	}
-
-	if err := h.service.Update(c, &entity); err != nil {
+	if e, err := h.service.Save(c, &{{.VarName}}); err != nil {
 		response.Fail(c, err)
 		return
 	}
 
-	response.Ok(c, entity)
+	response.Ok(c, e)
 }
 
 // Get{{.StructName}} godoc
@@ -70,11 +59,7 @@ func (h *{{.StructName}}Handler) Save{{.StructName}}(c *gin.Context) {
 // @Success 200 {object} response.Response{data=entity.{{.StructName}}}
 // @Router /v1/{{.VarName}}/{id} [get]
 func (h *{{.StructName}}Handler) Get{{.StructName}}(c *gin.Context) {
-	uid, exists := c.Get(cons.Uid)
-	if !exists {
-		response.Fail(c, errors.ErrorAuthFailed)
-		return
-	}
+	uid := c.GetUint(cons.Uid)
 
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -102,11 +87,7 @@ func (h *{{.StructName}}Handler) Get{{.StructName}}(c *gin.Context) {
 // @Success 200 {object} response.Response
 // @Router /v1/{{.VarName}}/{id} [delete]
 func (h *{{.StructName}}Handler) Delete{{.StructName}}(c *gin.Context) {
-	uid, exists := c.Get(cons.Uid)
-	if !exists {
-		response.Fail(c, errors.ErrorAuthFailed)
-		return
-	}
+	uid := c.GetUint(cons.Uid)
 
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -134,11 +115,7 @@ func (h *{{.StructName}}Handler) Delete{{.StructName}}(c *gin.Context) {
 // @Success 200 {object} response.Response{data=[]entity.{{.StructName}}}
 // @Router /v1/{{.VarName}}	[get]
 func (h *{{.StructName}}Handler) List{{.StructName}}s(c *gin.Context) {
-	uid, exists := c.Get(cons.Uid)
-	if !exists {
-		response.Fail(c, errors.ErrorAuthFailed)
-		return
-	}
+	uid := c.GetUint(cons.Uid)
 
 	var page model.Pagination
 	if err := c.ShouldBindQuery(&page); err != nil {

@@ -29,7 +29,7 @@ func New{{.ServiceName}}(db *gorm.DB) *{{.ServiceName}} {
 }
 
 
-func (s *{{.ServiceName}}) Save(ctx context.Context, db *gorm.DB, {{.VarName}} *model.Optional{{.StructName}}) (*entity.{{.StructName}}, error) {
+func (s *{{.ServiceName}}) Save(ctx context.Context, {{.VarName}} *model.Optional{{.StructName}}) (*entity.{{.StructName}}, error) {
 	return s.SaveWithDB(ctx, s.db, {{.VarName}})
 }
 
